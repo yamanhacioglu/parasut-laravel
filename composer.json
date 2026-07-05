@@ -1,0 +1,48 @@
+{
+    "name": "northlab/parasut-laravel",
+    "description": "Parasut (Paraşüt) API V4 icin kapsamli Laravel entegrasyon paketi - E-ticaret ve ERP sistemleri icin.",
+    "keywords": ["laravel", "parasut", "paraşüt", "api", "e-ticaret", "erp", "muhasebe", "e-fatura", "e-arsiv"],
+    "license": "MIT",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Northlab Dijital",
+            "homepage": "https://northlab.com.tr"
+        }
+    ],
+    "require": {
+        "php": "^8.1",
+        "illuminate/support": "^9.0|^10.0|^11.0|^12.0",
+        "illuminate/http": "^9.0|^10.0|^11.0|^12.0",
+        "guzzlehttp/guzzle": "^7.5"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^7.0|^8.0|^9.0|^10.0",
+        "phpunit/phpunit": "^9.5|^10.0|^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Northlab\\Parasut\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Northlab\\Parasut\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Northlab\\Parasut\\ParasutServiceProvider"
+            ],
+            "aliases": {
+                "Parasut": "Northlab\\Parasut\\Facades\\Parasut"
+            }
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "config": {
+        "sort-packages": true
+    }
+}
