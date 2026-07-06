@@ -116,10 +116,12 @@ class ParasutAuthenticator
             ->post("{$this->oauthBaseUrl()}/oauth/token", $payload);
 
         if ($response->failed()) {
+            $body = (array) $response->json();
+
             throw ParasutAuthenticationException::fromResponse(
                 $response->status(),
-                (array) $response->json(),
-                'Parasut OAuth2 kimlik dogrulamasi basarisiz oldu.'
+                $body,
+                $this->describeOAuthError($body, $response->status())
             );
         }
 
@@ -135,6 +137,33 @@ class ParasutAuthenticator
         $this->repository->put($token);
 
         return $token;
+    }
+
+    /**
+     * Parasut'un /oauth/token uc noktasi standart JSON:API "errors" formati
+     * yerine OAuth2 standardi olan {"error": "...", "error_description": "..."}
+     * formatinda hata doner. Bu metod, gercek nedeni (gecersiz client_id,
+     * yanlis kullanici/sifre, redirect_uri uyusmazligi vb.) kullaniciya
+     * gosterecek sekilde ayiklar.
+     */
+    protected function describeOAuthError(array $body, int $status): string
+    {
+        $error = $body['error'] ?? null;
+        $description = $body['error_description'] ?? null;
+
+        if (! $error && ! $description) {
+            return "Parasut OAuth2 kimlik dogrulamasi basarisiz oldu (HTTP {$status}). Yanit: ".json_encode($body);
+        }
+
+        $hint = match ($error) {
+            'invalid_client' => ' -> PARASUT_CLIENT_ID / PARASUT_CLIENT_SECRET degerlerini kontrol edin.',
+            'invalid_grant' => ' -> PARASUT_USERNAME / PARASUT_PASSWORD hatali olabilir ya da hesabin iki adimli dogrulamasi (2FA) acik olabilir (bu durumda password grant calismaz, authorization_code kullanmaniz gerekir).',
+            'invalid_request' => ' -> PARASUT_REDIRECT_URI degerinin Parasut uygulama ayarlarindaki ile birebir ayni oldugundan emin olun.',
+            'unauthorized_client' => ' -> Bu client_id icin secilen grant_type (password) yetkili degil. Parasut destek ekibinden client uygulamanizin "password" grant icin yetkilendirildigini teyit edin.',
+            default => '',
+        };
+
+        return "Parasut OAuth2 hatasi: [{$error}] {$description}{$hint}";
     }
 
     protected function isExpired(array $token): bool

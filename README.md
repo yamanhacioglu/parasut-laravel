@@ -86,7 +86,7 @@ use Northlab\Parasut\Facades\Parasut;
 // Musteri listesi
 $contacts = Parasut::contacts()->list([
     'filter' => ['account_type' => 'customer'],
-    'sort' => '-created_at',
+    'sort' => 'id',
     'page' => ['number' => 1, 'size' => 25],
 ]);
 
@@ -279,6 +279,37 @@ if (($result['data']['attributes']['status'] ?? null) === 'succeeded') {
 ## Rate Limiting
 
 Parasut API 10 saniyede 10 istek siniri koyar. Paket, ayni process/worker icindeki ardisik cagrilarda bu limiti otomatik olarak yonetir (cache tabanli sayac + gerektiginde bekleme). `config/parasut.php` icinden kapatabilir ya da esiklerini degistirebilirsiniz.
+
+## Testler
+
+Paket, `orchestra/testbench` + `Http::fake()` kullanan kapsamli bir test paketiyle birlikte gelir (gercek Parasut API'sine istek atilmaz).
+
+```bash
+composer install
+vendor/bin/phpunit
+```
+
+Sadece belirli bir suite calistirmak icin:
+
+```bash
+vendor/bin/phpunit --testsuite=Unit      # JsonApiPayload, QueryParameters (saf PHP, Laravel bagimsiz)
+vendor/bin/phpunit --testsuite=Feature   # HTTP client, auth, tum kaynak siniflari, service provider, artisan komutlari
+```
+
+**Kapsam:**
+
+| Dosya | Test edilen |
+|---|---|
+| `tests/Unit/JsonApiPayloadTest.php` | JSON:API payload/iliski/nested kaynak insasi |
+| `tests/Unit/QueryParametersTest.php` | filter/sort/page/include query uretimi |
+| `tests/Feature/ParasutClientTest.php` | URL olusturma, company scoping, 401/404/422/429/5xx hata esleme, retry/backoff, `withCompany()` |
+| `tests/Feature/ParasutAuthenticatorTest.php` | password/refresh_token grant, invalid_grant/invalid_client hata mesajlari, token cache'leme, otomatik yenileme |
+| `tests/Feature/ParasutManagerTest.php` | facade binding, kaynak instance cache'leme, `forCompany()` izolasyonu |
+| `tests/Feature/ParasutServiceProviderTest.php` | config merge, cache/database token repository secimi, singleton binding'ler, artisan komut kaydi |
+| `tests/Feature/Resources/*.php` | 25 kaynagin tamami: CRUD, ozel aksiyonlar (pay, archive, cancel, convertToInvoice, updateStatus, inventoryLevels, adjust, waitUntilFinished, share, vb.), desteklenmeyen metodlarin BadMethodCallException firlattigi durumlar |
+| `tests/Feature/Console/ConsoleCommandsTest.php` | `parasut:authorize`, `parasut:refresh-token` komutlarinin basarili/basarisiz senaryolari |
+
+> Not: Bu ortamda `packagist.org` erisimi kapali oldugu icin testler burada `composer install` ile calistirilamadi. Tum dosyalar `php -l` ile syntax kontrolunden gecirildi ve Laravel'e bagimli olmayan `JsonApiPayload`/`QueryParameters` mantigi ayrica saf PHP ile manuel calistirilip dogrulandi. `Http::fake()` tabanli testleri kendi makinenizde `composer install && vendor/bin/phpunit` ile calistirmaniz onerilir.
 
 ## Lisans
 
